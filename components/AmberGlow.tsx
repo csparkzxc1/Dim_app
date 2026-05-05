@@ -1,53 +1,30 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
+import { useBurnInProtection } from '@/hooks/useBurnInProtection';
+import { useFadeIn } from '@/hooks/useFadeIn';
 import { colors } from '@/theme/colors';
 
 type AmberGlowProps = {
-  active: boolean;
-  durationMs?: number;
+  progress: number;
   maxOpacity?: number;
 };
 
-const BURN_IN_SHIFT_PX = 10;
-const BURN_IN_SCALE_VARIATION = 0.05;
-
-function jitter(maxAbs: number): number {
-  return (Math.random() * 2 - 1) * maxAbs;
-}
-
-export function AmberGlow({
-  active,
-  durationMs = 30 * 60 * 1000,
-  maxOpacity = 0.5,
-}: AmberGlowProps) {
+export function AmberGlow({ progress, maxOpacity = 0.5 }: AmberGlowProps) {
   const { width, height } = useWindowDimensions();
-  const opacity = useSharedValue(0);
+  const { offsetX, offsetY, scale } = useBurnInProtection();
 
-  const { offsetX, offsetY, diameter, innerDiameter } = useMemo(() => {
-    const baseDiameter = Math.min(width, height) * 0.55;
-    const scale = 1 + jitter(BURN_IN_SCALE_VARIATION);
-    const finalDiameter = baseDiameter * scale;
+  const targetOpacity = Math.min(1, Math.max(0, progress)) * maxOpacity;
+  const opacity = useFadeIn(targetOpacity, { durationMs: 800 });
+
+  const { diameter, innerDiameter } = useMemo(() => {
+    const baseDiameter = Math.min(width, height) * 0.55 * scale;
     return {
-      offsetX: jitter(BURN_IN_SHIFT_PX),
-      offsetY: jitter(BURN_IN_SHIFT_PX),
-      diameter: finalDiameter,
-      innerDiameter: finalDiameter * 0.5,
+      diameter: baseDiameter,
+      innerDiameter: baseDiameter * 0.5,
     };
-  }, [width, height]);
-
-  useEffect(() => {
-    opacity.value = withTiming(active ? maxOpacity : 0, {
-      duration: active ? durationMs : 600,
-      easing: Easing.inOut(Easing.quad),
-    });
-  }, [active, durationMs, maxOpacity, opacity]);
+  }, [width, height, scale]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,

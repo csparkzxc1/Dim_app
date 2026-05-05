@@ -1,11 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import * as SystemUI from 'expo-system-ui';
 import { useFonts, Lora_400Regular, Lora_700Bold } from '@expo-google-fonts/lora';
 
+import { loadSettings } from '@/services/settings';
 import { colors } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -16,14 +17,29 @@ export default function RootLayout() {
     Lora_400Regular,
     Lora_700Bold,
   });
+  const [settingsReady, setSettingsReady] = useState(false);
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    let cancelled = false;
+    loadSettings().then((settings) => {
+      if (cancelled) return;
+      setSettingsReady(true);
+      if (!settings.onboardingComplete) {
+        router.replace('/onboarding');
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if ((fontsLoaded || fontError) && settingsReady) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, settingsReady]);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !settingsReady) {
     return null;
   }
 
@@ -36,7 +52,18 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: colors.backgroundBase },
           animation: 'fade',
         }}
-      />
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+        <Stack.Screen
+          name="settings"
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="about"
+          options={{ presentation: 'card', animation: 'slide_from_right' }}
+        />
+      </Stack>
     </View>
   );
 }
