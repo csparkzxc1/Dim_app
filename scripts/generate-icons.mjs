@@ -1,16 +1,93 @@
 import sharp from 'sharp';
-import { mkdir } from 'node:fs/promises';
+import opentypeNs from 'opentype.js';
+import { mkdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const opentype = opentypeNs.default ?? opentypeNs;
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ASSETS = path.join(__dirname, '..', 'assets');
+const ROOT = path.join(__dirname, '..');
+const ASSETS = path.join(ROOT, 'assets');
+const FONT_PATH = path.join(
+  ROOT,
+  'node_modules/@expo-google-fonts/lora/700Bold/Lora_700Bold.ttf',
+);
 
 const BG_DARK = '#0A0807';
-const BG_CREAM = '#F2EAD8';
-const INK = '#1F1A14';
+const TEXT_CREAM = '#D4C4B0';
 const AMBER_START = '#FFB870';
 const AMBER_END = '#FFCB8A';
+
+const fontBuffer = await readFile(FONT_PATH);
+const font = opentype.parse(
+  fontBuffer.buffer.slice(
+    fontBuffer.byteOffset,
+    fontBuffer.byteOffset + fontBuffer.byteLength,
+  ),
+);
+
+const unitScale = (fontSize) => fontSize / font.unitsPerEm;
+
+function buildLetters(text, x, y, fontSize) {
+  const scale = unitScale(fontSize);
+  let cursor = x;
+  const letters = [];
+  for (const char of text) {
+    const glyph = font.charToGlyph(char);
+    const glyphPath = glyph.getPath(cursor, y, fontSize);
+    const bbox = glyphPath.getBoundingBox();
+    letters.push({ char, path: glyphPath, bbox, x: cursor });
+    cursor += glyph.advanceWidth * scale;
+  }
+  return { letters, totalWidth: cursor - x };
+}
+
+function wordmarkSvg({ size, withBg }) {
+  const fontSize = size * 0.43;
+
+  const probe = buildLetters('DIM', 0, 0, fontSize);
+  let minY = Infinity;
+  let maxY = -Infinity;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  for (const l of probe.letters) {
+    if (l.bbox.y1 < minY) minY = l.bbox.y1;
+    if (l.bbox.y2 > maxY) maxY = l.bbox.y2;
+    if (l.bbox.x1 < minX) minX = l.bbox.x1;
+    if (l.bbox.x2 > maxX) maxX = l.bbox.x2;
+  }
+  const visualWidth = maxX - minX;
+  const visualHeight = maxY - minY;
+
+  const startX = (size - visualWidth) / 2 - minX;
+  const baselineY = (size - visualHeight) / 2 - minY;
+
+  const { letters } = buildLetters('DIM', startX, baselineY, fontSize);
+  const allPathD = letters.map((l) => l.path.toPathData(2)).join(' ');
+
+  const dGlyph = letters[0];
+  const dBox = dGlyph.bbox;
+  const dCounterCx = (dBox.x1 + dBox.x2) / 2 + (dBox.x2 - dBox.x1) * 0.06;
+  const dCounterCy = (dBox.y1 + dBox.y2) / 2;
+  const dotR = visualHeight * 0.085;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  <defs>
+    <radialGradient id="amber" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="${AMBER_END}" stop-opacity="1"/>
+      <stop offset="40%" stop-color="${AMBER_START}" stop-opacity="1"/>
+      <stop offset="80%" stop-color="${AMBER_START}" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="${AMBER_START}" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  ${withBg ? `<rect width="${size}" height="${size}" fill="${BG_DARK}"/>` : ''}
+  <path d="${allPathD}" fill="${TEXT_CREAM}"/>
+  <circle cx="${dCounterCx}" cy="${dCounterCy}" r="${dotR * 2.4}" fill="url(#amber)" opacity="0.55"/>
+  <circle cx="${dCounterCx}" cy="${dCounterCy}" r="${dotR}" fill="url(#amber)"/>
+</svg>`;
+}
 
 function glowSvg({ size, ratio, withBg }) {
   const cx = size / 2;
@@ -33,36 +110,6 @@ function glowSvg({ size, ratio, withBg }) {
   ${withBg ? `<rect width="${size}" height="${size}" fill="${BG_DARK}"/>` : ''}
   <circle cx="${cx}" cy="${cx}" r="${haloR}" fill="url(#halo)"/>
   <circle cx="${cx}" cy="${cx}" r="${r}" fill="url(#core)"/>
-</svg>`;
-}
-
-function wordmarkSvg({ size, withBg }) {
-  const k = size / 1024;
-  const sw = 22 * k;
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 1024 1024">
-  ${withBg ? `<rect width="1024" height="1024" fill="${BG_CREAM}"/>` : ''}
-  <g stroke="${INK}" stroke-width="${sw / k}" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <!-- D -->
-    <path d="M 222 215 L 224 818"/>
-    <path d="M 198 215 L 252 215"/>
-    <path d="M 196 818 L 256 818"/>
-    <path d="M 224 215 Q 410 232 416 516 Q 410 802 224 818"/>
-
-    <!-- i (capital I, dot omitted to match sketch) -->
-    <path d="M 510 295 L 512 818"/>
-    <path d="M 486 295 L 538 295"/>
-    <path d="M 486 818 L 540 818"/>
-
-    <!-- m -->
-    <path d="M 620 295 L 622 818"/>
-    <path d="M 700 295 L 702 818"/>
-    <path d="M 780 295 L 782 818"/>
-    <path d="M 620 295 Q 660 260 700 295"/>
-    <path d="M 700 295 Q 740 260 780 295"/>
-    <path d="M 600 818 L 642 818"/>
-    <path d="M 760 818 L 802 818"/>
-  </g>
 </svg>`;
 }
 
