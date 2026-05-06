@@ -15,7 +15,7 @@ import { TimeWindowPicker } from '@/components/TimeWindowPicker';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import {
-  MAX_OPACITY_OPTIONS,
+  WAKE_BRIGHTNESS_OPTIONS,
   loadSettings,
   saveSettings,
   type Settings,
@@ -75,7 +75,7 @@ export default function SettingsScreen() {
 
         <Section
           title="자동 진입"
-          caption="앱을 켜면 곧바로 SleepMode로 진입합니다."
+          caption="끄면 앱을 켰을 때 잠들기 버튼이 먼저 보입니다."
         >
           <View style={styles.row}>
             <Text style={styles.rowLabel}>켜짐</Text>
@@ -91,19 +91,19 @@ export default function SettingsScreen() {
         </Section>
 
         <Section
-          title="최대 밝기"
-          caption="기상 윈도우 끝에 도달했을 때의 글로우 강도."
+          title="기상 시 밝기"
+          caption="기상 윈도우 끝에 도달했을 때 화면과 글로우의 최대 강도."
         >
           <View style={styles.chipRow}>
-            {MAX_OPACITY_OPTIONS.map((value) => {
-              const selected = settings.maxOpacity === value;
+            {WAKE_BRIGHTNESS_OPTIONS.map((value) => {
+              const selected = settings.wakeBrightness === value;
               return (
                 <Pressable
                   key={value}
                   style={[styles.chip, selected && styles.chipSelected]}
                   onPress={() =>
                     setSettings((prev) =>
-                      prev ? { ...prev, maxOpacity: value } : prev,
+                      prev ? { ...prev, wakeBrightness: value } : prev,
                     )
                   }
                 >

@@ -8,22 +8,22 @@ export type WakeWindow = {
 export type Settings = {
   wakeWindow: WakeWindow;
   autoEnter: boolean;
-  maxOpacity: number;
+  wakeBrightness: number;
   color: 'amber';
   onboardingComplete: boolean;
 };
 
-const STORAGE_KEY = 'dim:settings:v1';
+const STORAGE_KEY = 'dim:settings:v2';
 
 export const DEFAULT_SETTINGS: Settings = {
   wakeWindow: { start: '06:00', end: '07:00' },
   autoEnter: true,
-  maxOpacity: 0.5,
+  wakeBrightness: 0.4,
   color: 'amber',
   onboardingComplete: false,
 };
 
-export const MAX_OPACITY_OPTIONS = [0.1, 0.2, 0.3, 0.4, 0.5] as const;
+export const WAKE_BRIGHTNESS_OPTIONS = [0.1, 0.2, 0.3, 0.4, 0.5] as const;
 
 function isValidHHMM(value: unknown): value is string {
   return (
@@ -49,12 +49,12 @@ function sanitize(raw: unknown): Settings {
       typeof draft.autoEnter === 'boolean'
         ? draft.autoEnter
         : DEFAULT_SETTINGS.autoEnter,
-    maxOpacity:
-      typeof draft.maxOpacity === 'number' &&
-      draft.maxOpacity >= 0.05 &&
-      draft.maxOpacity <= 1
-        ? draft.maxOpacity
-        : DEFAULT_SETTINGS.maxOpacity,
+    wakeBrightness:
+      typeof draft.wakeBrightness === 'number' &&
+      draft.wakeBrightness >= 0.05 &&
+      draft.wakeBrightness <= 1
+        ? draft.wakeBrightness
+        : DEFAULT_SETTINGS.wakeBrightness,
     color: 'amber',
     onboardingComplete:
       typeof draft.onboardingComplete === 'boolean'
