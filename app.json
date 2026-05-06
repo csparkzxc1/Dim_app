@@ -21,7 +21,7 @@
       "package": "com.dim.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0A0807"
+        "backgroundColor": "#F2EAD8"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
