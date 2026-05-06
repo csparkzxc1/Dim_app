@@ -40,6 +40,12 @@
           "resizeMode": "contain"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "revenueCat": {
+        "iosApiKey": "REPLACE_ME",
+        "androidApiKey": "REPLACE_ME"
+      }
+    }
   }
 }

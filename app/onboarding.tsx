@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
 import { updateSettings } from '@/services/settings';
+import { checkEntitlement, initPurchases } from '@/services/purchase';
 
 type Page = {
   eyebrow: string;
@@ -60,7 +61,9 @@ export default function Onboarding() {
 
   const finish = async () => {
     await updateSettings({ onboardingComplete: true }).catch(() => {});
-    router.replace('/');
+    await initPurchases().catch(() => {});
+    const purchased = await checkEntitlement().catch(() => false);
+    router.replace(purchased ? '/' : '/paywall');
   };
 
   const isLast = index === PAGES.length - 1;

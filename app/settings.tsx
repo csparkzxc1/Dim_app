@@ -20,6 +20,7 @@ import {
   saveSettings,
   type Settings,
 } from '@/services/settings';
+import { restorePurchases } from '@/services/purchase';
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<Settings | null>(null);
@@ -125,6 +126,27 @@ export default function SettingsScreen() {
           <View style={styles.row}>
             <View style={styles.swatch} />
             <Text style={styles.rowLabel}>앰버</Text>
+          </View>
+        </Section>
+
+        <Section title="구매">
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>
+              {settings.isPurchased ? '구매 완료' : '미구매'}
+            </Text>
+            <Pressable
+              onPress={async () => {
+                const result = await restorePurchases();
+                if (result.ok) {
+                  setSettings((prev) =>
+                    prev ? { ...prev, isPurchased: true } : prev,
+                  );
+                }
+              }}
+              hitSlop={12}
+            >
+              <Text style={styles.linkText}>복원</Text>
+            </Pressable>
           </View>
         </Section>
 
@@ -249,6 +271,10 @@ const styles = StyleSheet.create({
   },
   aboutLinkText: {
     ...typography.body,
+    color: colors.accentAmber,
+  },
+  linkText: {
+    ...typography.caption,
     color: colors.accentAmber,
   },
 });

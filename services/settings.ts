@@ -11,6 +11,7 @@ export type Settings = {
   wakeBrightness: number;
   color: 'amber';
   onboardingComplete: boolean;
+  isPurchased: boolean;
 };
 
 const STORAGE_KEY = 'dim:settings:v2';
@@ -21,6 +22,7 @@ export const DEFAULT_SETTINGS: Settings = {
   wakeBrightness: 0.4,
   color: 'amber',
   onboardingComplete: false,
+  isPurchased: false,
 };
 
 export const WAKE_BRIGHTNESS_OPTIONS = [0.1, 0.2, 0.3, 0.4, 0.5] as const;
@@ -60,6 +62,10 @@ function sanitize(raw: unknown): Settings {
       typeof draft.onboardingComplete === 'boolean'
         ? draft.onboardingComplete
         : DEFAULT_SETTINGS.onboardingComplete,
+    isPurchased:
+      typeof draft.isPurchased === 'boolean'
+        ? draft.isPurchased
+        : DEFAULT_SETTINGS.isPurchased,
   };
 }
 

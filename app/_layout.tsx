@@ -7,6 +7,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useFonts, Lora_400Regular, Lora_700Bold } from '@expo-google-fonts/lora';
 
 import { loadSettings } from '@/services/settings';
+import { checkEntitlement, initPurchases } from '@/services/purchase';
 import { colors } from '@/theme/colors';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -17,29 +18,41 @@ export default function RootLayout() {
     Lora_400Regular,
     Lora_700Bold,
   });
-  const [settingsReady, setSettingsReady] = useState(false);
+  const [bootReady, setBootReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    loadSettings().then((settings) => {
+    (async () => {
+      const settings = await loadSettings();
       if (cancelled) return;
-      setSettingsReady(true);
+
       if (!settings.onboardingComplete) {
         router.replace('/onboarding');
+        setBootReady(true);
+        return;
       }
-    });
+
+      await initPurchases();
+      const purchased = await checkEntitlement();
+      if (cancelled) return;
+
+      if (!purchased) {
+        router.replace('/paywall');
+      }
+      setBootReady(true);
+    })();
     return () => {
       cancelled = true;
     };
   }, []);
 
   useEffect(() => {
-    if ((fontsLoaded || fontError) && settingsReady) {
+    if ((fontsLoaded || fontError) && bootReady) {
       SplashScreen.hideAsync().catch(() => {});
     }
-  }, [fontsLoaded, fontError, settingsReady]);
+  }, [fontsLoaded, fontError, bootReady]);
 
-  if ((!fontsLoaded && !fontError) || !settingsReady) {
+  if ((!fontsLoaded && !fontError) || !bootReady) {
     return null;
   }
 
@@ -55,6 +68,7 @@ export default function RootLayout() {
       >
         <Stack.Screen name="index" />
         <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+        <Stack.Screen name="paywall" options={{ animation: 'fade' }} />
         <Stack.Screen
           name="settings"
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}

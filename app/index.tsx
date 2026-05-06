@@ -8,6 +8,7 @@ import { LongPressGate } from '@/components/LongPressGate';
 import { useWakeWindow } from '@/hooks/useWakeWindow';
 import { useSleepBrightness } from '@/hooks/useSleepBrightness';
 import { loadSettings, type Settings } from '@/services/settings';
+import { checkEntitlement } from '@/services/purchase';
 import { registerWakeWindowTask } from '@/services/backgroundTask';
 import { colors } from '@/theme/colors';
 import { typography } from '@/theme/typography';
@@ -32,9 +33,15 @@ export default function Index() {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      loadSettings().then((value) => {
-        if (!cancelled) setSettings(value);
-      });
+      (async () => {
+        const value = await loadSettings();
+        if (cancelled) return;
+        setSettings(value);
+        const purchased = await checkEntitlement();
+        if (!cancelled && !purchased) {
+          router.replace('/paywall');
+        }
+      })();
       return () => {
         cancelled = true;
       };
